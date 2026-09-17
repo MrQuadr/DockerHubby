@@ -1,0 +1,45 @@
+services:
+
+  qbittorrent:
+    profiles: ["${PROFILE}"]
+    hostname: qbittorrent.media
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=${WEBUI_PORT}
+      - TORRENTING_PORT=${TORRENTING_PORT}
+    volumes:
+      - ${PATH_CONFIG}/qbittorrent:/config
+      - ${PATH_DOWNLOADS}:/downloads
+      - ${PATH_MEDIA}:/media
+      - ${PATH_CERTS}/qbittorrent:/certs
+    ports:
+      - ${IP_EXT}:${WEBUI_PORT_QBT}:${WEBUI_PORT}
+      - ${TORRENTING_PORT_QBT}:${TORRENTING_PORT}
+      - ${TORRENTING_PORT_QBT}:${TORRENTING_PORT}/udp
+    networks:
+      - media_net
+    restart: unless-stopped
+  
+  samba:
+    profiles: ["${PROFILE}"]
+    container_name: samba
+    build:
+      context: ./samba
+      args:
+        SAMBA_USER: ${SAMBA_USER}
+        SAMBA_PASSWORD: ${SAMBA_PASSWORD}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${PATH_CONFIG}/samba/smb.conf:/etc/samba/smb.conf
+      - ${PATH_CONFIG}/samba:/config
+      - ${PATH_DOWNLOADS}:/downloads
+    ports:
+      - ${IP_EXT}:${WEBUI_PORT_SMB}:445
+    restart: unless-stopped

@@ -1,0 +1,22 @@
+include:
+  - path: network/docker-compose-network.yml
+    env_file: network/.env
+  - path: media/docker-compose-media.yml
+    env_file: media/.env
+
+networks:
+  media_net:
+    name: media_net
+    driver: bridge
+    # internal: true
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
+
+  proxy_net:
+    name: proxy_net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.80.0.0/24
+  

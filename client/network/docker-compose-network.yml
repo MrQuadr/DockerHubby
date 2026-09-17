@@ -1,0 +1,142 @@
+services:
+  3xui:
+    profiles: ["${PROFILE}"]
+    hostname: 3xui.network
+    image: ghcr.io/mhsanaei/3x-ui:latest
+    container_name: 3xui
+    environment:
+      XRAY_VMESS_AEAD_FORCED: "false"
+      XUI_ENABLE_FAIL2BAN: "true"
+    tty: true
+    volumes:
+      - ${PATH_CONFIG}/3xui:/etc/x-ui/
+      - ${PATH_CERTS}/3xui:/root/cert/
+    ports:
+      - ${IP_EXT}:${WEBUI_PORT_XUI}:2053
+      - ${IP_EXT}:${PORT_HTTP_PROXY}:${PORT_HTTP_PROXY}
+      - ${IP_EXT}:${PORT_WIREGUARD}:${PORT_WIREGUARD}/udp
+      - ${IP_EXT}:${PORT_MTPROTO}:${PORT_MTPROTO}/tcp
+#    network_mode: host
+    networks:
+      - media_net
+      - proxy_net
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+    depends_on:
+      - pihole
+    mem_limit: 512m
+
+  pihole:
+    profiles: ["${PROFILE}"]
+    hostname: pihole.network
+    container_name: pihole
+    image: docker.io/pihole/pihole:latest
+    environment:
+      # Set the appropriate timezone for your location (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g:
+      TZ: ${TZ}
+      # Set a password to access the web interface. Not setting one will result in a random password being assigned
+      # FTLCONF_webserver_api_password:
+      # If using Docker's default `bridge` network setting the dns listening mode should be set to 'ALL'
+      FTLCONF_dns_listeningMode: 'ALL'
+    volumes:
+      - ${PATH_CONFIG}/pihole:/etc/pihole
+      - ${PATH_CERTS}/pihole:/cert:ro
+    ports:
+      # DNS Ports
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Default HTTP Port
+      - ${WEBUI_PORT_PHL_HTTP}:80/tcp
+      # Default HTTPs Port. FTL will generate a self-signed certificate
+      - ${WEBUI_PORT_PHL_HTTPS}:443/tcp
+      # Uncomment the line below if you are using Pi-hole as your DHCP server
+      #- "67:67/udp"
+      # Uncomment the line below if you are using Pi-hole as your NTP server
+      #- "123:123/udp"
+    # networks:
+    #   - media_net
+    #   - dns_net
+    networks:
+      - media_net
+      - proxy_net
+    cap_add:
+      # See https://docs.pi-hole.net/docker/#note-on-capabilities
+      # Required if you are using Pi-hole as your DHCP server, else not needed
+      - NET_ADMIN
+      # Required if you are using Pi-hole as your NTP client to be able to set the host's system time
+      - SYS_TIME
+      # Optional, if Pi-hole should get some more processing time
+      - SYS_NICE
+    restart: unless-stopped
+
+  hysteria-client:
+    profiles: ["${PROFILE}"]
+    hostname: hysteria.network
+    image: docker.io/tobyxdd/hysteria
+    container_name: hysteria-client
+    volumes:
+      - ${PATH_CONFIG}/hysteria2/config.yaml:/etc/hysteria/config.yaml
+    networks:
+      - proxy_net
+    command: ["client", "-c", "/etc/hysteria/config.yaml"]
+    restart: unless-stopped
+
+
+
+  
+
+#  i2p:
+#    image: geti2p/i2p:latest
+#    container_name: i2p
+#    environment:
+#      - JVM_XMX=${I2P_JVM_XMX}
+#      - EXT_PORT=${I2P_EXP_PORT}
+#    volumes:
+#      - ${I2P_CONF}:/i2p/.i2p
+#      - ${DOWNLOADS_PATH}:/i2psnark
+#    ports:
+#      - "4444:4444"   # HTTP Proxy
+#      - "4445:4445"   # HTTPS Proxy
+#      - "6668:6668"   # IRC Proxy
+#      - "7654:7654"   # I2CP Protocol
+#      - "7656:7656"   # SAM Bridge
+#      - "7657:7657"   # Router Console
+#      - "7658:7658"   # I2P Site (eepsite)
+#      - "7659:7659"   # SMTP Proxy
+#      - "7660:7660"   # POP3 Proxy
+#      - "${I2P_EXP_PORT}:12345"           # I2NP TCP
+#      - "${I2P_EXP_PORT}:12345/udp"       # I2NP UDP
+#    network_mode: host
+#    restart: unless-stopped
+
+#  i2pd:
+#    image: purplei2p/i2pd:latest          # Официальный образ
+#    container_name: i2pd
+#    restart: unless-stopped
+#    ports:
+#      - "7070:7070"     # Веб-панель
+#      - "4442:4442"     # HTTP Proxy (для браузера)
+#      - "4447:4447"     # SOCKS Proxy (рекомендуется для Tor Browser)
+#      - "7656:7656"     # SAM (опционально)
+#    network_mode: host
+#    volumes:
+#      - ${I2PD_DATA}:/home/i2pd/data
+#      - ${I2PD_CONF}:/etc/i2pd/i2pd.conf:ro
+#    cap_add:
+#      - NET_ADMIN
+
+#   tor:
+# #    image: peterdavehello/tor-socks-proxy:latest
+#     build:
+#       context: ./tor
+#     container_name: tor
+#     volumes:
+#       - ${TOR_CONF}:/etc/tor
+# #    ports:
+# #      - "127.0.0.1:8853:53/udp"
+# #      - "127.0.0.1:9150:9150/tcp"
+# #      - "127.0.0.1:9001:9001"
+#     network_mode: host
+#     restart: unless-stopped
