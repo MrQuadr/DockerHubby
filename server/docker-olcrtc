@@ -1,0 +1,18 @@
+# 1. Build
+FROM alpine:latest AS buildapp
+WORKDIR /olcbuild
+RUN apk --no-cache add git go
+RUN go install github.com/magefile/mage@latest
+ENV PATH="/root/go/bin:${PATH}"
+RUN git clone https://github.com/openlibrecommunity/olcrtc
+RUN cd olcrtc && mage build 
+# RUN cd olcrtc && mage cross
+
+
+# 2. OlcRtc
+FROM alpine
+WORKDIR /olcfolder
+
+COPY --from=buildapp /olcbuild/olcrtc/build/olcrtc-linux-amd64 .
+
+CMD [ "./olcrtc-linux-amd64", "olcrtc.yaml" ]

@@ -47,6 +47,17 @@ services:
       # - net.ipv6.conf.all.accept_ra=2
     volumes:
       - ./data:/var/lib/cloudflare-warp
+  
+  olcrtc:
+    build:
+      context: .
+      dockerfile: docker-olcrtc
+    container_name: olcrtc
+    restart: always
+    volumes:
+      - ./olcrtc.yaml:/olcfolder/olsrtc.yaml
+    depends_on:
+      - warp
 
 volumes:
   acme:
